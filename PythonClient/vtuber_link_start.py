@@ -6,40 +6,11 @@ from SolvePnPHeadPoseEstimation import HeadPoseEstimator
 from threading import Thread
 import cv2
 import sys
+import time
 import numpy as np
 from queue import Queue
 import socketio
-
-cap = cv2.VideoCapture(sys.argv[1])
-
-fd = UltraLightFaceDetecion("pretrained/version-RFB-320_without_postprocessing.tflite",
-                            conf_threshold=0.98)
-fa = CoordinateAlignmentModel("pretrained/coor_2d106_face_alignment.tflite")
-hp = HeadPoseEstimator("pretrained/head_pose_object_points.npy",
-                       cap.get(3), cap.get(4))
-gs = IrisLocalizationModel("pretrained/iris_localization.tflite")
-
-QUEUE_BUFFER_SIZE = 18
-
-box_queue = Queue(maxsize=QUEUE_BUFFER_SIZE)
-landmark_queue = Queue(maxsize=QUEUE_BUFFER_SIZE)
-iris_queue = Queue(maxsize=QUEUE_BUFFER_SIZE)
-upstream_queue = Queue(maxsize=QUEUE_BUFFER_SIZE)
-
-# ======================================================
-
-sio = socketio.Client()
-
-
-@sio.on('connect', namespace='/kizuna')
-def on_connect():
-    sio.emit('result_data', 0, namespace='/kizuna')
-
-sio.connect("http://127.0.0.1:6789")
-sio.wait()
-
-# ======================================================
-
+from visualization import *
 
 def face_detection():
     while True:
@@ -60,7 +31,7 @@ def face_alignment():
         frame, boxes = box_queue.get()
         landmarks = fa.get_landmarks(frame, boxes)
         landmark_queue.put((frame, landmarks))
-
+    
 
 def iris_localization(YAW_THD=45, thickness=1):
     while True:
@@ -106,6 +77,7 @@ def iris_localization(YAW_THD=45, thickness=1):
 
 def draw(color=(125, 255, 0), thickness=2):
     while True:
+        ls = time.perf_counter()
         frame, landmarks, euler_angle = upstream_queue.get()
 
         for p in np.round(landmarks).astype(np.int):
@@ -116,8 +88,52 @@ def draw(color=(125, 255, 0), thickness=2):
 
         frame = cv2.resize(frame, (960, 720))
 
+        ct = time.perf_counter() - ls
+        fps = int(1/(ct))
+        cv2.putText(frame, "FPS: %d" % fps, (40, 40),
+                    cv2.FONT_HERSHEY_DUPLEX, 1, (0, 255, 0), 1)
+
         cv2.imshow('result', frame)
         cv2.waitKey(1)
+
+
+
+print('Start')
+cap = cv2.VideoCapture(0)
+# while cap.isOpened():    
+#     retval, image = cap.read()  
+#     cv2.imshow("Video", image) 
+#     key = cv2.waitKey(1)   
+#     if key == 32:      
+#         break
+# cap.release()   
+# cv2.destroyAllWindows()   
+
+fd = UltraLightFaceDetecion("pretrained/version-RFB-320_without_postprocessing.tflite",
+                            conf_threshold=0.98)
+fa = CoordinateAlignmentModel("pretrained/coor_2d106_face_alignment.tflite")
+hp = HeadPoseEstimator("pretrained/head_pose_object_points.npy",
+                    cap.get(3), cap.get(4))
+gs = IrisLocalizationModel("pretrained/iris_localization.tflite")
+
+QUEUE_BUFFER_SIZE = 18
+
+box_queue = Queue(maxsize=QUEUE_BUFFER_SIZE)
+landmark_queue = Queue(maxsize=QUEUE_BUFFER_SIZE)
+iris_queue = Queue(maxsize=QUEUE_BUFFER_SIZE)
+upstream_queue = Queue(maxsize=QUEUE_BUFFER_SIZE)
+
+# ======================================================
+
+sio = socketio.Client()
+
+@sio.on('connect', namespace='/kizuna')
+def on_connect():
+    sio.emit('result_data', 0, namespace='/kizuna')
+
+sio.connect("http://127.0.0.1:6789")
+print('Connect Server OK')
+# ======================================================
 
 
 draw_thread = Thread(target=draw)
@@ -128,7 +144,9 @@ iris_thread.start()
 
 alignment_thread = Thread(target=face_alignment)
 alignment_thread.start()
-
 face_detection()
+
 cap.release()
 cv2.destroyAllWindows()
+
+sio.wait()
