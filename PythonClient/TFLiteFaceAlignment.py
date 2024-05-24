@@ -154,64 +154,9 @@ if __name__ == '__main__':
                 cv2.circle(frame, tuple(p), 1, color, 1, cv2.LINE_AA)
 
         ts = time.perf_counter() - start_time
-        print('\r', '%.3f'%ts, end=' ')
+        print('\r', 'time cost: %.3f'%ts, end=' ')
         fps = int(1/(ts))
         cv2.putText(frame, "FPS: %d"%fps, (40, 40), cv2.FONT_HERSHEY_DUPLEX, 1, (0, 255, 0), 1)
-
-
-    # while True:
-    #     ret, frame = cap.read()
-
-    #     if not ret:
-    #         break
-
-    #     # frame = frame[:480, 380:920, :]  # dress
-    #     # frame = cv2.resize(frame, (960, 1080))
-
-    #     bboxes, _ = fd.inference(frame)
-
-    #     for landmarks in fa.get_landmarks(frame, bboxes):
-    #         # calculate head pose
-    #         euler_angle = hp.get_head_pose(landmarks)
-    #         pitch, yaw, roll = euler_angle[:, 0]
-
-    #         eye_markers = np.take(landmarks, fa.eye_bound, axis=0)
-
-    #         # eye_centers = np.average(eye_markers, axis=1)
-    #         eye_centers = landmarks[[34, 88]]
-
-    #         # eye_lengths = np.linalg.norm(landmarks[[39, 93]] - landmarks[[35, 89]], axis=1)
-    #         eye_start = landmarks[[35, 89]]
-    #         eye_end = landmarks[[39, 93]]
-    #         eye_lengths = (eye_end - eye_start)[:, 0]
-
-    #         pupils = eye_centers.copy()
-
-    #         if yaw > -YAW_THD:
-    #             iris_left = gs.get_mesh(frame, eye_lengths[0], eye_centers[0])
-    #             pupils[0], _ = gs.draw_pupil(iris_left, frame, thickness=1)
-
-    #         if yaw < YAW_THD:
-    #             iris_right = gs.get_mesh(frame, eye_lengths[1], eye_centers[1])
-    #             pupils[1], _ = gs.draw_pupil(iris_right, frame, thickness=1)
-
-    #         poi = landmarks[[35, 89]], landmarks[[39, 93]], pupils, eye_centers
-
-    #         theta, pha, _ = gs.calculate_3d_gaze(poi)
-
-    #         # print(theta.mean(), pha.mean())
-
-    #         gs.draw_eye_markers(eye_markers, frame, thickness=1)
-
-    #     cv2.imshow('res', frame)
-    #     # cv2.imwrite(f'./asset/orign_dress/img{counter:0>3}.png', frame)
-
-    #     counter += 1
-    #     if cv2.waitKey(0) == ord('q'):
-    #         break
-
-    # cap.release()
-    # cv2.destroyAllWindows()
 
         cv2.imshow("Video", frame) 
         key = cv2.waitKey(1)   

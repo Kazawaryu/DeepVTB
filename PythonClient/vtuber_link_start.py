@@ -80,20 +80,21 @@ def draw(color=(125, 255, 0), thickness=2):
         ls = time.perf_counter()
         frame, landmarks, euler_angle = upstream_queue.get()
 
-        for p in np.round(landmarks).astype(np.int):
-            cv2.circle(frame, tuple(p), 1, color, thickness, cv2.LINE_AA)
+        # for p in np.round(landmarks).astype(np.int):
+        #     cv2.circle(frame, tuple(p), 1, color, thickness, cv2.LINE_AA)
 
-        face_center = np.mean(landmarks, axis=0)
-        hp.draw_axis(frame, euler_angle, face_center)
+        # face_center = np.mean(landmarks, axis=0)
+        # hp.draw_axis(frame, euler_angle, face_center)
 
-        frame = cv2.resize(frame, (960, 720))
+        # frame = cv2.resize(frame, (960, 720))
 
         ct = time.perf_counter() - ls
-        fps = int(1/(ct))
-        cv2.putText(frame, "FPS: %d" % fps, (40, 40),
-                    cv2.FONT_HERSHEY_DUPLEX, 1, (0, 255, 0), 1)
+        print('\r', 'time cost: %.3f'%ct, end=' ')
+        # fps = int(1/(ct))
+        # cv2.putText(frame, "FPS: %d" % fps, (40, 40),
+        #             cv2.FONT_HERSHEY_DUPLEX, 1, (0, 255, 0), 1)
 
-        cv2.imshow('result', frame)
+        # cv2.imshow('result', frame)
         cv2.waitKey(1)
 
 
