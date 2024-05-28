@@ -1,5 +1,5 @@
 # coding: utf-8
-# from TFLiteFaceDetector import UltraLightFaceDetecion
+from TFLiteFaceDetector import UltraLightFaceDetecion
 from TFLiteFaceAlignment import CoordinateAlignmentModel
 from TFLiteIrisLocalization import IrisLocalizationModel
 from SolvePnPHeadPoseEstimation import HeadPoseEstimator
@@ -13,9 +13,9 @@ from queue import Queue
 import socketio
 from visualization import *
 
-import sys
-pwd = sys.path[0]
-sys.path.append(pwd + '/faster_mobile_retinaface')
+KEY_USE_FASTFACE = False
+KEY_DET_IRIS = True
+KEY_VIS_OUTPUT = False
 
 def face_detection():
     while True:
@@ -52,29 +52,36 @@ def iris_localization(YAW_THD=45, thickness=1):
             eye_centers = landmarks[[34, 88]]
             eye_lengths = (eye_ends - eye_starts)[:, 0]
 
-            pupils = eye_centers.copy()
+            if KEY_DET_IRIS:
+                pupils = eye_centers.copy()
 
-            if yaw > -YAW_THD:
-                iris_left = gs.get_mesh(frame, eye_lengths[0], eye_centers[0])
-                pupils[0] = iris_left[0]
+                if yaw > -YAW_THD:
+                    iris_left = gs.get_mesh(frame, eye_lengths[0], eye_centers[0])
+                    pupils[0] = iris_left[0]
 
-            if yaw < YAW_THD:
-                iris_right = gs.get_mesh(frame, eye_lengths[1], eye_centers[1])
-                pupils[1] = iris_right[0]
+                if yaw < YAW_THD:
+                    iris_right = gs.get_mesh(frame, eye_lengths[1], eye_centers[1])
+                    pupils[1] = iris_right[0]
 
-            poi = eye_starts, eye_ends, pupils, eye_centers
+                poi = eye_starts, eye_ends, pupils, eye_centers
 
-            theta, pha, _ = gs.calculate_3d_gaze(poi)
+                theta, pha, _ = gs.calculate_3d_gaze(poi)
             mouth_open_percent = (
                 landmarks[60, 1] - landmarks[62, 1]) / (landmarks[53, 1] - landmarks[71, 1])
             left_eye_status = (
                 landmarks[33, 1] - landmarks[40, 1]) / eye_lengths[0]
             right_eye_status = (
                 landmarks[87, 1] - landmarks[94, 1]) / eye_lengths[1]
-            result_string = {'euler': (pitch, -yaw, -roll),
-                             'eye': (theta.mean(), pha.mean()),
-                             'mouth': mouth_open_percent,
-                             'blink': (left_eye_status, right_eye_status)}
+            if KEY_DET_IRIS:
+                result_string = {'euler': (pitch, -yaw, -roll),
+                                'eye': (theta.mean(), pha.mean()),
+                                'mouth': mouth_open_percent,
+                                'blink': (left_eye_status, right_eye_status)}
+            else:
+                result_string = {'euler': (pitch, -yaw, -roll),
+                                'eye': (0, 0),
+                                'mouth': mouth_open_percent,
+                                'blink': (left_eye_status, right_eye_status)}
             sio.emit('result_data', result_string, namespace='/kizuna')
             upstream_queue.put((frame, landmarks, euler_angle))
             break
@@ -84,28 +91,32 @@ def draw(color=(125, 255, 0), thickness=2):
     while True:
         ls = time.perf_counter()
         frame, landmarks, euler_angle = upstream_queue.get()
-
-        # for p in np.round(landmarks).astype(np.int):
-        #     cv2.circle(frame, tuple(p), 1, color, thickness, cv2.LINE_AA)
-
-        # face_center = np.mean(landmarks, axis=0)
-        # hp.draw_axis(frame, euler_angle, face_center)
-
-        # frame = cv2.resize(frame, (960, 720))
-
         ct = time.perf_counter() - ls
         print('\r', 'time cost: %.3f'%ct, end=' ')
-        # fps = int(1/(ct))
-        # cv2.putText(frame, "FPS: %d" % fps, (40, 40),
-        #             cv2.FONT_HERSHEY_DUPLEX, 1, (0, 255, 0), 1)
+        fps = int(1/(ct))
 
-        # cv2.imshow('result', frame)
-        cv2.waitKey(1)
+        if KEY_VIS_OUTPUT:
+            for p in np.round(landmarks).astype(np.int):
+                cv2.circle(frame, tuple(p), 1, color, thickness, cv2.LINE_AA)
+
+            face_center = np.mean(landmarks, axis=0)
+            hp.draw_axis(frame, euler_angle, face_center)
+
+            frame = cv2.resize(frame, (960, 720))
+
+            cv2.putText(frame, "FPS: %d" % fps, (40, 40),
+                    cv2.FONT_HERSHEY_DUPLEX, 1, (0, 255, 0), 1)
+
+
+     
+            cv2.imshow('result', frame)
+            cv2.waitKey(1)
 
 
 
 print('Start')
 cap = cv2.VideoCapture(0)
+
 # while cap.isOpened():    
 #     retval, image = cap.read()  
 #     cv2.imshow("Video", image) 
@@ -115,15 +126,17 @@ cap = cv2.VideoCapture(0)
 # cap.release()   
 # cv2.destroyAllWindows()   
 
-# fd = UltraLightFaceDetecion("pretrained/version-RFB-320_without_postprocessing.tflite",
-#                             conf_threshold=0.98)
 
-fd = MxnetDetectionModel("weights/16and32", 0, scale=.4, gpu=-1, margin=0.15)
+if KEY_USE_FASTFACE:
+    fd = MxnetDetectionModel("weights/16and32", 0, scale=.4, gpu=-1, margin=0.15)
+else:
+    fd = UltraLightFaceDetecion("pretrained/version-RFB-320_without_postprocessing.tflite",conf_threshold=0.98)
 
 fa = CoordinateAlignmentModel("pretrained/coor_2d106_face_alignment.tflite")
 hp = HeadPoseEstimator("pretrained/head_pose_object_points.npy",
                     cap.get(3), cap.get(4))
-gs = IrisLocalizationModel("pretrained/iris_localization.tflite")
+if KEY_DET_IRIS:
+    gs = IrisLocalizationModel("pretrained/iris_localization.tflite")
 
 QUEUE_BUFFER_SIZE = 18
 
