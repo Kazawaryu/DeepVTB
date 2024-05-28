@@ -126,13 +126,10 @@ class UltraLightFaceDetecion():
 if __name__ == '__main__':
     import sys
     import time
-    import face_detector as fastfd
 
-    fd = fastfd.MxnetDetectionModel("weights/16and32", 0, scale=.4, gpu=-1, margin=0.15)
-
-    # fd = UltraLightFaceDetecion(
-    #     "pretrained/version-RFB-320_without_postprocessing.tflite",
-    #     conf_threshold=0.88)
+    fd = UltraLightFaceDetecion(
+        "model/version-RFB-320_without_postprocessing.tflite",
+        conf_threshold=0.88)
 
     cap = cv2.VideoCapture(0)
     color = (125, 255, 125)
@@ -144,16 +141,12 @@ if __name__ == '__main__':
             break
 
         start_time = time.perf_counter()
-        # boxes, scores = fd.inference(frame)
-
-        out = fd._retina_forward(frame)
-        detach = fd._retina_detach(out)
-        boxes = fd._nms_wrapper(detach)
+        boxes, scores = fd.inference(frame)
 
         ct = time.perf_counter() - start_time
         print('\r', 'time cost: %.3f'%ct, end=' ')
 
-        for det in boxes:
+        for det in boxes.astype(np.int32):
             cv2.rectangle(frame, (det[0], det[1]), (det[2], det[3]), (2, 255, 0), 1)
 
         fps = int(1/(ct))

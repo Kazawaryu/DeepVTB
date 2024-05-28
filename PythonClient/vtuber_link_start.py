@@ -3,7 +3,7 @@ from TFLiteFaceDetector import UltraLightFaceDetecion
 from TFLiteFaceAlignment import CoordinateAlignmentModel
 from TFLiteIrisLocalization import IrisLocalizationModel
 from SolvePnPHeadPoseEstimation import HeadPoseEstimator
-from face_detector import MxnetDetectionModel
+from FastFaceDetector import MxnetDetectionModel
 from threading import Thread
 import cv2
 import sys
@@ -11,7 +11,6 @@ import time
 import numpy as np
 from queue import Queue
 import socketio
-from visualization import *
 
 KEY_USE_FASTFACE = False
 KEY_DET_IRIS = True
@@ -117,26 +116,16 @@ def draw(color=(125, 255, 0), thickness=2):
 print('Start')
 cap = cv2.VideoCapture(0)
 
-# while cap.isOpened():    
-#     retval, image = cap.read()  
-#     cv2.imshow("Video", image) 
-#     key = cv2.waitKey(1)   
-#     if key == 32:      
-#         break
-# cap.release()   
-# cv2.destroyAllWindows()   
-
-
 if KEY_USE_FASTFACE:
-    fd = MxnetDetectionModel("pretrained/16and32", 0, scale=.4, gpu=-1, margin=0.15)
+    fd = MxnetDetectionModel("model/16and32", 0, scale=.4, gpu=-1, margin=0.15)
 else:
-    fd = UltraLightFaceDetecion("pretrained/version-RFB-320_without_postprocessing.tflite",conf_threshold=0.98)
+    fd = UltraLightFaceDetecion("model/version-RFB-320_without_postprocessing.tflite",conf_threshold=0.98)
 
-fa = CoordinateAlignmentModel("pretrained/coor_2d106_face_alignment.tflite")
-hp = HeadPoseEstimator("pretrained/head_pose_object_points.npy",
+fa = CoordinateAlignmentModel("model/coor_2d106_face_alignment.tflite")
+hp = HeadPoseEstimator("model/head_pose_object_points.npy",
                     cap.get(3), cap.get(4))
 if KEY_DET_IRIS:
-    gs = IrisLocalizationModel("pretrained/iris_localization.tflite")
+    gs = IrisLocalizationModel("model/iris_localization.tflite")
 
 QUEUE_BUFFER_SIZE = 18
 

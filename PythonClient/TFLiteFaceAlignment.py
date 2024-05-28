@@ -132,10 +132,10 @@ if __name__ == '__main__':
     import sys
 
     fd = UltraLightFaceDetecion(
-        "pretrained/version-RFB-320_without_postprocessing.tflite",
+        "model/version-RFB-320_without_postprocessing.tflite",
         conf_threshold=0.88)
     fa = CoordinateAlignmentModel(
-        "pretrained/coor_2d106_face_alignment.tflite")
+        "model/coor_2d106_face_alignment.tflite")
 
     # cap = cv2.VideoCapture(sys.argv[1])
     cap = cv2.VideoCapture(0) 
@@ -164,26 +164,3 @@ if __name__ == '__main__':
             break
     cap.release()   
     cv2.destroyAllWindows()   
-
-    # while cap.isOpened():
-    #     ret, frame = cap.read()
-
-    #     if not ret:
-    #         break
-
-    #     start_time = time.perf_counter()
-
-    #     boxes, scores = fd.inference(frame)
-
-    #     for pred in fa.get_landmarks(frame, boxes):
-    #         for p in np.round(pred).astype(np.int):
-    #             cv2.circle(frame, tuple(p), 1, color, 1, cv2.LINE_AA)
-
-    #     print(time.perf_counter() - start_time)
-
-    #     cv2.imshow("result", frame)
-    #     if cv2.waitKey(0) == ord('q'):
-    #         break
-
-    #     cap.release()
-    #     cv2.destroyAllWindows()   
