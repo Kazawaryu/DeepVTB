@@ -1,8 +1,9 @@
 # coding: utf-8
-from TFLiteFaceDetector import UltraLightFaceDetecion
+# from TFLiteFaceDetector import UltraLightFaceDetecion
 from TFLiteFaceAlignment import CoordinateAlignmentModel
 from TFLiteIrisLocalization import IrisLocalizationModel
 from SolvePnPHeadPoseEstimation import HeadPoseEstimator
+from face_detector import MxnetDetectionModel
 from threading import Thread
 import cv2
 import sys
@@ -11,6 +12,10 @@ import numpy as np
 from queue import Queue
 import socketio
 from visualization import *
+
+import sys
+pwd = sys.path[0]
+sys.path.append(pwd + '/faster_mobile_retinaface')
 
 def face_detection():
     while True:
@@ -110,8 +115,11 @@ cap = cv2.VideoCapture(0)
 # cap.release()   
 # cv2.destroyAllWindows()   
 
-fd = UltraLightFaceDetecion("pretrained/version-RFB-320_without_postprocessing.tflite",
-                            conf_threshold=0.98)
+# fd = UltraLightFaceDetecion("pretrained/version-RFB-320_without_postprocessing.tflite",
+#                             conf_threshold=0.98)
+
+fd = MxnetDetectionModel("weights/16and32", 0, scale=.4, gpu=-1, margin=0.15)
+
 fa = CoordinateAlignmentModel("pretrained/coor_2d106_face_alignment.tflite")
 hp = HeadPoseEstimator("pretrained/head_pose_object_points.npy",
                     cap.get(3), cap.get(4))
