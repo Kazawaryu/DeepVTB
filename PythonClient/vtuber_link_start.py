@@ -128,7 +128,7 @@ cap = cv2.VideoCapture(0)
 
 
 if KEY_USE_FASTFACE:
-    fd = MxnetDetectionModel("weights/16and32", 0, scale=.4, gpu=-1, margin=0.15)
+    fd = MxnetDetectionModel("pretrained/16and32", 0, scale=.4, gpu=-1, margin=0.15)
 else:
     fd = UltraLightFaceDetecion("pretrained/version-RFB-320_without_postprocessing.tflite",conf_threshold=0.98)
 

@@ -295,7 +295,7 @@ if __name__ == '__main__':
 
 
     cap = cv2.VideoCapture(0)
-    fd = MxnetDetectionModel("weights/16and32", 0, scale=.4, gpu=-1, margin=0.15)
+    fd = MxnetDetectionModel("pretrained/16and32", 0, scale=.4, gpu=-1, margin=0.15)
 
     while cap.isOpened():
         ret, frame = cap.read()
